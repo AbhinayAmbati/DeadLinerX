@@ -3,11 +3,19 @@
 import { useAuth } from 'react-oidc-context';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Toaster } from 'sonner';
+import { TaskForm } from '@/components/tasks/TaskForm';
+import { TaskList } from '@/components/tasks/TaskList';
 import { useTokens } from '@/hooks/useTokens';
 
+interface IdTokenClaims {
+  email: string;
+  sub: string;
+  [key: string]: any;
+}
+
 export default function DashboardPage() {
-  const { isAuthenticated, isLoading, error, accessToken, idToken } = useTokens();
+  const { isAuthenticated, isLoading, error, idToken } = useTokens();
   const router = useRouter();
 
   useEffect(() => {
@@ -36,33 +44,31 @@ export default function DashboardPage() {
     );
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || !idToken) {
     return null;
   }
 
+  const claims = idToken as unknown as IdTokenClaims;
+  const userEmail = claims.email;
+
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">Dashboard</h1>
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Authentication Details</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <p className="text-sm text-muted-foreground">Access Token</p>
-              <p className="text-xs font-mono bg-muted p-2 rounded-md overflow-x-auto">
-                {accessToken}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">ID Token</p>
-              <p className="text-xs font-mono bg-muted p-2 rounded-md overflow-x-auto">
-                {idToken}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+      <Toaster position="top-right" />
+      
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold">Welcome, {userEmail}!</h1>
+        <p className="text-gray-600 mt-2">
+          Manage your tasks and deadlines below.
+        </p>
+      </div>
+
+      <div className="grid gap-8 md:grid-cols-2">
+        <div>
+          <TaskForm />
+        </div>
+        <div>
+          <TaskList />
+        </div>
       </div>
     </div>
   );
