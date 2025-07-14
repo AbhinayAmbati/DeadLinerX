@@ -3,6 +3,7 @@
 import { Navigation } from '@/components/navigation';
 import { ThemeProvider } from '@/components/theme-provider';
 import { AuthProvider } from 'react-oidc-context';
+import { Toaster } from 'sonner';
 import './globals.css';
 
 const cognitoAuthConfig = {
@@ -10,7 +11,8 @@ const cognitoAuthConfig = {
   client_id: process.env.NEXT_PUBLIC_AWS_CLIENT_ID!,
   redirect_uri: typeof window !== 'undefined' ? window.location.origin : '',
   response_type: 'code',
-  scope: 'openid email profile',
+  scope: 'openid',
+  loadUserInfo: true,
   onSigninCallback: () => {
     window.history.replaceState({}, document.title, window.location.pathname);
   },
@@ -24,10 +26,13 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <AuthProvider {...cognitoAuthConfig}>
             <Navigation />
-            {children}
+            <main className="container mx-auto px-4 py-8">
+              {children}
+            </main>
+            <Toaster position="bottom-right" />
           </AuthProvider>
         </ThemeProvider>
       </body>
