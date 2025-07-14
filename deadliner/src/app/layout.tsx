@@ -4,6 +4,7 @@ import { Navigation } from '@/components/navigation';
 import { ThemeProvider } from '@/components/theme-provider';
 import { AuthProvider } from 'react-oidc-context';
 import { Toaster } from 'sonner';
+import { setCookie, deleteCookie } from '@/lib/utils';
 import './globals.css';
 
 const cognitoAuthConfig = {
@@ -16,6 +17,13 @@ const cognitoAuthConfig = {
   onSigninCallback: () => {
     window.history.replaceState({}, document.title, window.location.pathname);
   },
+  onSignoutCallback: () => {
+    // Clear auth cookies
+    deleteCookie('access_token');
+    deleteCookie('id_token');
+    // Redirect to home page
+    window.location.href = '/';
+  }
 };
 
 export default function RootLayout({

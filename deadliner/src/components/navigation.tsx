@@ -6,6 +6,7 @@ import { MoonIcon, SunIcon } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
 import { useAuth } from 'react-oidc-context';
+import { deleteCookie } from '@/lib/utils';
 
 export function Navigation() {
   const auth = useAuth();
@@ -16,12 +17,20 @@ export function Navigation() {
     setMounted(true);
   }, []);
 
-  const handleSignOut = useCallback(() => {
-    const clientId = process.env.NEXT_PUBLIC_AWS_CLIENT_ID!;
-    const logoutUri = typeof window !== 'undefined' ? window.location.origin : '';
-    const cognitoDomain = `https://${process.env.NEXT_PUBLIC_AWS_DOMAIN}.auth.${process.env.NEXT_PUBLIC_AWS_REGION}.amazoncognito.com`;
-    window.location.href = `${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(logoutUri)}`;
-  }, []);
+  const handleSignOut = useCallback(async () => {
+    try {
+      // Clear auth cookies before signing out
+      deleteCookie('access_token');
+      deleteCookie('id_token');
+      
+      // Use the proper OIDC signout method
+      await auth.signoutRedirect({
+        post_logout_redirect_uri: window.location.origin
+      });
+    } catch (error) {
+      console.error('Error during sign out:', error);
+    }
+  }, [auth]);
 
   const handleSignIn = useCallback(() => {
     auth.signinRedirect();

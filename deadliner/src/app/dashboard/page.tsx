@@ -4,18 +4,19 @@ import { useAuth } from 'react-oidc-context';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useTokens } from '@/hooks/useTokens';
 
 export default function DashboardPage() {
-  const auth = useAuth();
+  const { isAuthenticated, isLoading, error, accessToken, idToken } = useTokens();
   const router = useRouter();
 
   useEffect(() => {
-    if (!auth.isAuthenticated && !auth.isLoading) {
+    if (!isAuthenticated && !isLoading) {
       router.push('/');
     }
-  }, [auth.isAuthenticated, auth.isLoading, router]);
+  }, [isAuthenticated, isLoading, router]);
 
-  if (auth.isLoading) {
+  if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-center items-center min-h-[calc(100vh-8rem)]">
@@ -25,17 +26,17 @@ export default function DashboardPage() {
     );
   }
 
-  if (auth.error) {
+  if (error) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-center items-center min-h-[calc(100vh-8rem)]">
-          <p className="text-lg text-red-500">Error: {auth.error.message}</p>
+          <p className="text-lg text-red-500">Error: {error.message}</p>
         </div>
       </div>
     );
   }
 
-  if (!auth.isAuthenticated) {
+  if (!isAuthenticated) {
     return null;
   }
 
@@ -45,36 +46,19 @@ export default function DashboardPage() {
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>User Profile</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <p className="text-sm text-muted-foreground">Email</p>
-              <p className="text-lg">{auth.user?.profile.email}</p>
-            </div>
-            {auth.user?.profile.name && (
-              <div>
-                <p className="text-sm text-muted-foreground">Name</p>
-                <p className="text-lg">{auth.user.profile.name}</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
             <CardTitle>Authentication Details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
               <p className="text-sm text-muted-foreground">Access Token</p>
               <p className="text-xs font-mono bg-muted p-2 rounded-md overflow-x-auto">
-                {auth.user?.access_token}
+                {accessToken}
               </p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">ID Token</p>
               <p className="text-xs font-mono bg-muted p-2 rounded-md overflow-x-auto">
-                {auth.user?.id_token}
+                {idToken}
               </p>
             </div>
           </CardContent>
