@@ -1,16 +1,19 @@
-import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
-import './globals.css';
-import { ThemeProvider } from '@/components/theme-provider';
-import { AuthProvider } from '@/lib/auth/auth-context';
-import { Toaster } from 'sonner';
+'use client';
+
 import { Navigation } from '@/components/navigation';
+import { ThemeProvider } from '@/components/theme-provider';
+import { AuthProvider } from 'react-oidc-context';
+import './globals.css';
 
-const inter = Inter({ subsets: ['latin'] });
-
-export const metadata: Metadata = {
-  title: 'DeadlineRx - Smart Deadline Reminders',
-  description: 'Set it. Forget it. Get reminded. ⏰',
+const cognitoAuthConfig = {
+  authority: `https://cognito-idp.${process.env.NEXT_PUBLIC_AWS_REGION}.amazonaws.com/${process.env.NEXT_PUBLIC_AWS_USER_POOL_ID}`,
+  client_id: process.env.NEXT_PUBLIC_AWS_CLIENT_ID!,
+  redirect_uri: typeof window !== 'undefined' ? window.location.origin : '',
+  response_type: 'code',
+  scope: 'openid email profile',
+  onSigninCallback: () => {
+    window.history.replaceState({}, document.title, window.location.pathname);
+  },
 };
 
 export default function RootLayout({
@@ -20,19 +23,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <AuthProvider>
+      <body>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <AuthProvider {...cognitoAuthConfig}>
             <Navigation />
-            <main className="container mx-auto px-4 py-8">
-              {children}
-            </main>
-            <Toaster position="bottom-right" />
+            {children}
           </AuthProvider>
         </ThemeProvider>
       </body>

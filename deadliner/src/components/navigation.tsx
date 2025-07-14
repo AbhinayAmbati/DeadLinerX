@@ -1,11 +1,11 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useAuth } from '@/lib/auth/auth-context';
 import { MoonIcon, SunIcon } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
-import { useEffect, useState } from 'react';
+import { useAuth } from 'react-oidc-context';
 import {
   NavigationMenu,
   NavigationMenuItem,
@@ -15,13 +15,20 @@ import {
 } from '@/components/ui/navigation-menu';
 
 export function Navigation() {
-  const { user, signOut } = useAuth();
+  const auth = useAuth();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const handleSignOut = () => {
+    const clientId = process.env.NEXT_PUBLIC_AWS_CLIENT_ID!;
+    const logoutUri = typeof window !== 'undefined' ? window.location.origin : '';
+    const cognitoDomain = `https://${process.env.NEXT_PUBLIC_AWS_DOMAIN}.auth.${process.env.NEXT_PUBLIC_AWS_REGION}.amazoncognito.com`;
+    window.location.href = `${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(logoutUri)}`;
+  };
 
   return (
     <>
@@ -33,7 +40,7 @@ export function Navigation() {
 
           <NavigationMenu>
             <NavigationMenuList className="space-x-2">
-              {user ? (
+              {auth.isAuthenticated ? (
                 <>
                   <NavigationMenuItem>
                     <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
@@ -41,28 +48,22 @@ export function Navigation() {
                     </NavigationMenuLink>
                   </NavigationMenuItem>
                   <NavigationMenuItem>
-                    <Button 
-                      variant="ghost" 
-                      onClick={() => signOut()}
-                      className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50"
-                    >
-                      Sign Out
-                    </Button>
+                    <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
+                      <button onClick={handleSignOut}>Sign Out</button>
+                    </NavigationMenuLink>
                   </NavigationMenuItem>
                 </>
               ) : (
                 <>
                   <NavigationMenuItem>
                     <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
-                      <Link href="/signin">Sign In</Link>
+                      <button onClick={() => auth.signinRedirect()}>Sign In</button>
                     </NavigationMenuLink>
                   </NavigationMenuItem>
                   <NavigationMenuItem>
-                    <Link href="/register" className="inline-block">
-                      <Button variant="default" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
-                        Register
-                      </Button>
-                    </Link>
+                    <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
+                      <button onClick={() => auth.signinRedirect()}>Register</button>
+                    </NavigationMenuLink>
                   </NavigationMenuItem>
                 </>
               )}

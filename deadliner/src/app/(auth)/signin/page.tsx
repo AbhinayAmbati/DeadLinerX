@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useAuth } from '@/lib/auth/auth-context';
+import { signIn } from 'aws-amplify/auth';
 import { authSchema, type AuthSchema } from '@/lib/validations';
 import { Button } from '@/components/ui/button';
 import { AuthBackground } from '@/components/auth-background';
@@ -30,7 +30,6 @@ import { toast } from 'sonner';
 
 export default function SignInPage() {
   const router = useRouter();
-  const { signIn } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<AuthSchema>({
@@ -44,11 +43,19 @@ export default function SignInPage() {
   const onSubmit = async (data: AuthSchema) => {
     try {
       setIsLoading(true);
-      await signIn(data.email, data.password);
+      await signIn({
+        username: data.email,
+        password: data.password,
+      });
       toast.success('Welcome back!');
       router.push('/dashboard');
     } catch (error) {
-      toast.error('Invalid email or password.');
+      console.error('Sign in error:', error);
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error('Failed to sign in. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }

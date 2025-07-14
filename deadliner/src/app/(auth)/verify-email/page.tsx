@@ -4,17 +4,14 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/lib/auth/auth-context';
+import { confirmSignUp, resendSignUpCode } from 'aws-amplify/auth';
 import { verificationSchema, type VerificationSchema } from '@/lib/validations';
 import { Button } from '@/components/ui/button';
 import { AuthBackground } from '@/components/auth-background';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
-  CardHeader,
-  CardTitle,
 } from '@/components/ui/card';
 import {
   Form,
@@ -29,8 +26,8 @@ import { toast } from 'sonner';
 
 export default function VerifyEmailPage() {
   const router = useRouter();
-  const { verifyEmail, user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [email, setEmail] = useState('');
 
   const form = useForm<VerificationSchema>({
     resolver: zodResolver(verificationSchema),
@@ -40,22 +37,52 @@ export default function VerifyEmailPage() {
   });
 
   const onSubmit = async (data: VerificationSchema) => {
+    if (!email) {
+      toast.error('Please enter your email address');
+      return;
+    }
+
     try {
       setIsLoading(true);
-      await verifyEmail(data.code);
+      await confirmSignUp({
+        username: email,
+        confirmationCode: data.code,
+      });
       toast.success('Email verified successfully!');
-      router.push('/dashboard');
+      router.push('/signin');
     } catch (error) {
-      toast.error('Invalid verification code.');
+      console.error('Verification error:', error);
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error('Invalid verification code.');
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (!user) {
-    router.push('/signin');
-    return null;
-  }
+  const handleResendCode = async () => {
+    if (!email) {
+      toast.error('Please enter your email address');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      await resendSignUpCode({ username: email });
+      toast.success('New verification code sent!');
+    } catch (error) {
+      console.error('Resend code error:', error);
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error('Failed to resend code. Please try again.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <>
@@ -67,13 +94,25 @@ export default function VerifyEmailPage() {
               Verify your email
             </h1>
             <p className="text-sm text-muted-foreground">
-              We sent a verification code to {user.email}
+              Enter the verification code sent to your email
             </p>
           </div>
           <Card className="border-0 shadow-lg dark:shadow-purple-900/20">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)}>
-                <CardContent className="pt-6 pb-4">
+                <CardContent className="pt-6 pb-4 space-y-4">
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="you@example.com"
+                        type="email"
+                        disabled={isLoading}
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                      />
+                    </FormControl>
+                  </FormItem>
                   <FormField
                     control={form.control}
                     name="code"
@@ -105,10 +144,7 @@ export default function VerifyEmailPage() {
                   <Button
                     variant="outline"
                     className="w-full"
-                    onClick={() => {
-                      // TODO: Implement resend verification code
-                      toast.success('New verification code sent!');
-                    }}
+                    onClick={handleResendCode}
                     disabled={isLoading}
                   >
                     Resend Code

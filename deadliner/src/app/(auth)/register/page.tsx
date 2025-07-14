@@ -5,17 +5,14 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useAuth } from '@/lib/auth/auth-context';
+import { signUp } from 'aws-amplify/auth';
 import { authSchema, type AuthSchema } from '@/lib/validations';
 import { Button } from '@/components/ui/button';
 import { AuthBackground } from '@/components/auth-background';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
-  CardHeader,
-  CardTitle,
 } from '@/components/ui/card';
 import {
   Form,
@@ -30,7 +27,6 @@ import { toast } from 'sonner';
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { signUp } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<AuthSchema>({
@@ -44,11 +40,28 @@ export default function RegisterPage() {
   const onSubmit = async (data: AuthSchema) => {
     try {
       setIsLoading(true);
-      await signUp(data.email, data.password);
-      toast.success('Registration successful! Please verify your email.');
-      router.push('/verify-email');
+      const { isSignUpComplete, userId, nextStep } = await signUp({
+        username: data.email,
+        password: data.password,
+        options: {
+          userAttributes: {
+            email: data.email,
+          },
+          autoSignIn: true,
+        },
+      });
+
+      if (nextStep.signUpStep === 'CONFIRM_SIGN_UP') {
+        toast.success('Registration successful! Please verify your email.');
+        router.push('/verify-email');
+      }
     } catch (error) {
-      toast.error('Something went wrong. Please try again.');
+      console.error('Sign up error:', error);
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error('Failed to create account. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
