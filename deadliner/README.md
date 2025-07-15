@@ -1,36 +1,87 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Deadliner
 
-## Getting Started
+A task management application built with Next.js and AWS services.
 
-First, run the development server:
+## AWS Setup
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+### DynamoDB Table
+
+1. Create a DynamoDB table with the following configuration:
+   - Table Name: `Tasks`
+   - Partition Key: `userId` (String)
+   - Sort Key: `taskId` (String)
+   - Enable TTL: No
+   - Capacity mode: On-demand
+
+### Lambda Functions
+
+Create three Lambda functions for handling tasks:
+
+1. `create-task`:
+   - Runtime: Node.js 18.x
+   - Handler: `tasks.createTaskHandler`
+   - Source: `src/lib/aws/lambda/tasks.ts`
+
+2. `get-tasks`:
+   - Runtime: Node.js 18.x
+   - Handler: `tasks.getTasksHandler`
+   - Source: `src/lib/aws/lambda/tasks.ts`
+
+3. `delete-task`:
+   - Runtime: Node.js 18.x
+   - Handler: `tasks.deleteTaskHandler`
+   - Source: `src/lib/aws/lambda/tasks.ts`
+
+Add the following environment variables to each Lambda function:
+- `DYNAMODB_TASKS_TABLE`: The name of your DynamoDB table
+
+### API Gateway
+
+1. Create a new REST API
+2. Create the following endpoints:
+   - POST /tasks -> create-task Lambda
+   - GET /tasks -> get-tasks Lambda
+   - DELETE /tasks -> delete-task Lambda
+3. Enable CORS for all endpoints
+4. Deploy the API to a stage (e.g., 'prod')
+
+## Environment Variables
+
+Create a `.env.local` file with the following variables:
+
+```env
+# AWS Configuration
+NEXT_PUBLIC_API_GATEWAY_URL=your-api-gateway-url
+AWS_REGION=your-aws-region
+AWS_ACCESS_KEY_ID=your-access-key
+AWS_SECRET_ACCESS_KEY=your-secret-key
+DYNAMODB_TASKS_TABLE=Tasks
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Development
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+# Install dependencies
+npm install
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# Run the development server
+npm run dev
+```
 
-## Learn More
+## Building for Production
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+# Build the application
+npm run build
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Start the production server
+npm start
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Security Considerations
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Use AWS IAM roles and policies to restrict Lambda function permissions
+2. Store AWS credentials securely
+3. Implement proper authentication and authorization
+4. Use environment variables for sensitive configuration
+5. Enable AWS CloudWatch for monitoring and logging

@@ -5,6 +5,8 @@ import * as z from 'zod';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { createTask } from '@/lib/api/tasks';
+import { useAuth } from 'react-oidc-context';
 
 const taskSchema = z.object({
   taskName: z.string().min(1, 'Task name is required'),
@@ -15,6 +17,7 @@ type TaskFormData = z.infer<typeof taskSchema>;
 
 export function TaskForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { user } = useAuth();
   
   const {
     register,
@@ -26,19 +29,19 @@ export function TaskForm() {
   });
 
   const onSubmit = async (data: TaskFormData) => {
+    if (!user?.profile.sub || !user?.profile.email) {
+      toast.error('User not authenticated');
+      return;
+    }
+
     try {
       setIsSubmitting(true);
-      const response = await fetch('/api/tasks', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
+      await createTask({
+        taskName: data.taskName,
+        deadline: data.deadline,
+        userId: user.profile.sub,
+        userEmail: user.profile.email,
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to create task');
-      }
 
       toast.success('Task created successfully!');
       reset();
