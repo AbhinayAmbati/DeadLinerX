@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getTasks, deleteTask } from '@/lib/api/tasks';
 import { useTokens } from '@/hooks/useTokens';
@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 interface IdTokenClaims {
   email: string;
   sub: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export function TaskList() {
@@ -18,7 +18,7 @@ export function TaskList() {
   const [error, setError] = useState<string | null>(null);
   const { isAuthenticated, idToken } = useTokens();
 
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     if (!isAuthenticated || !idToken) {
       setError('User not authenticated');
       setIsLoading(false);
@@ -71,7 +71,7 @@ export function TaskList() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [isAuthenticated, idToken]);
 
   useEffect(() => {
     if (isAuthenticated && idToken) {
@@ -80,7 +80,7 @@ export function TaskList() {
       setTasks([]); // Reset tasks when user is not authenticated
       setIsLoading(false);
     }
-  }, [isAuthenticated, idToken]);
+  }, [isAuthenticated, idToken, fetchTasks]);
 
   const handleDelete = async (taskId: string) => {
     if (!isAuthenticated || !idToken) {

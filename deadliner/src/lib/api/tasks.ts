@@ -53,6 +53,7 @@ export async function createTask(task: {
 
   const response = await fetch(`${API_BASE_URL}/tasks`, {
     method: 'POST',
+    mode: 'cors',
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
@@ -70,6 +71,7 @@ export async function getTasks(userId: string): Promise<Task[]> {
 
   const response = await fetch(`${API_BASE_URL}/tasks?userId=${userId}`, {
     method: 'GET',
+    mode: 'cors',
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
@@ -86,6 +88,7 @@ export async function deleteTask(userId: string, taskId: string): Promise<void> 
 
   const response = await fetch(`${API_BASE_URL}/tasks?userId=${userId}&taskId=${taskId}`, {
     method: 'DELETE',
+    mode: 'cors',
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',

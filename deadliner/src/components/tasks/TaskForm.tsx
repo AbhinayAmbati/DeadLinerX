@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { createTask } from '@/lib/api/tasks';
-import { useAuth } from 'react-oidc-context';
+import { useTokens } from '@/hooks/useTokens';
 
 const taskSchema = z.object({
   taskName: z.string().min(1, 'Task name is required'),
@@ -15,9 +15,15 @@ const taskSchema = z.object({
 
 type TaskFormData = z.infer<typeof taskSchema>;
 
+interface IdTokenClaims {
+  email: string;
+  sub: string;
+  [key: string]: unknown;
+}
+
 export function TaskForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { user } = useAuth();
+  const { isAuthenticated, idToken } = useTokens();
   
   const {
     register,
@@ -29,8 +35,14 @@ export function TaskForm() {
   });
 
   const onSubmit = async (data: TaskFormData) => {
-    if (!user?.profile.sub || !user?.profile.email) {
+    if (!isAuthenticated || !idToken) {
       toast.error('User not authenticated');
+      return;
+    }
+
+    const claims = idToken as unknown as IdTokenClaims;
+    if (!claims.sub || !claims.email) {
+      toast.error('Invalid user information');
       return;
     }
 
@@ -39,8 +51,8 @@ export function TaskForm() {
       await createTask({
         taskName: data.taskName,
         deadline: data.deadline,
-        userId: user.profile.sub,
-        userEmail: user.profile.email,
+        userId: claims.sub,
+        userEmail: claims.email,
       });
 
       toast.success('Task created successfully!');
